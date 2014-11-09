@@ -1,6 +1,6 @@
 import lz4
 from construct import \
-    Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8
+    Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter
 
 
 class Lz4Adapter(Adapter):
@@ -24,7 +24,16 @@ def Lz4Blob(name, length_field=UBInt32("length")):
 
 
 def String(name):
-    return PascalString(name, length_field=UBInt32("length"))
+    return StringAdapter(
+        LengthValueAdapter(
+            Sequence(name,
+                UBInt32("length"),
+                Field("data", lambda ctx: ctx["length"]),
+                Padding(lambda ctx: (4 - ctx['length'] % 4) % 4),
+            )
+        ),
+    )
+
 
 
 Device = Struct(
@@ -84,6 +93,7 @@ ClusterConfigMessage = Struct(
     MetaArray(lambda c: c["folder_count"], Folder),
     UBInt32("option_count"),
     MetaArray(lambda c: c["option_count"], Option),
+    OptionalGreedyRange(UBInt8("leftovers")),
 )
 
 IndexMessage = Struct(
@@ -142,13 +152,14 @@ packet = Struct("packet",
         Flag("compressed"),
     ),
     UBInt32("length"),
-    Switch("payload", lambda context: context["header"].compressed, {
-        False: messages_switch,
-        True: TunnelAdapter(
-            Lz4Blob("data"),
-            messages_switch,
-        )
-    })
+    #Switch("payload", lambda context: context["header"].compressed, {
+    #    False: messages_switch,
+    #    True: TunnelAdapter(
+    #        Lz4Blob("data"),
+    #        messages_switch,
+    #    )
+    #})
+    ClusterConfigMessage
 )
 
 packet_stream = Struct("packet_stream",
@@ -202,8 +213,10 @@ sock.connect(('localhost', 22000))
 
 data = ""
 while True:
+    print len(data)
     data += sock.recv(1024)
     container = packet_stream.parse(data)
+    print container
 
     for packet in container.packet:
         print packet
