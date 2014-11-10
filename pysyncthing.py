@@ -221,7 +221,7 @@ if not os.path.exists("client.key"):
 class ClientProtocol(object):
 
     def __init__(self, hostname, port):
-        self.local_message_id = 0
+        self.local_message_id = 1
 
         ctx = SSL.Context(SSL.TLSv1_2_METHOD)
         #ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
@@ -232,7 +232,7 @@ class ClientProtocol(object):
         self.socket.connect((hostname, port))
 
     def send_message(self, type, id=None, **kwargs):
-        self.socket.send(packet.build(Container(
+        data = packet.build(Container(
             header = Container(
                 message_version=0,
                 message_id=id or self.local_message_id,
@@ -240,20 +240,21 @@ class ClientProtocol(object):
                 compressed=False,
             ),
             payload = Container(**kwargs),
-        )))
+        ))
+        print packet.parse(data)
+        self.socket.send(data)
         self.local_message_id += 1
 
     def handle_0(self, packet):
-        """self.send_message(
+        self.send_message(
             0,
             client_name = 'syncthing',
-            client_version = 'v0.0.0',
+            client_version = 'v0.10.5',
             folders = [],
             options = {
                 "name": "example",
             },
-        )"""
-        pass
+        )
 
     def handle_4(self, packet):
         self.send_message(5, id=packet['header'].message_id)
