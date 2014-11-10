@@ -1,6 +1,6 @@
 import lz4
 from construct import \
-    Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter
+    ExprAdapter, Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter, Container, ConstAdapter
 
 
 class Lz4Adapter(Adapter):
@@ -34,6 +34,27 @@ def String(name):
         ),
     )
 
+
+def Array(name, array_of):
+    return LengthValueAdapter(
+        Sequence(name,
+            UBInt32("length"),
+            MetaArray(lambda c: c["length"], array_of),
+        ),
+    )
+
+
+def Dict(name, key, value):
+    return LengthValueAdapter(
+        Sequence(name,
+            UBInt32("length"),
+            ExprAdapter(
+                MetaArray(lambda c: c["length"], Sequence("dict", key, value)),
+                encoder=lambda obj, ctx: obj.items(),
+                decoder=lambda obj, ctx: dict(obj),
+            )
+        ),
+    )
 
 
 Device = Struct(
@@ -75,8 +96,7 @@ FileInfo = Struct(
 Folder = Struct(
     "folder",
     String("id"),
-    UBInt32("file_count"),
-    MetaArray(lambda c: c["file_count"], FileInfo),
+    Array("files", FileInfo),
 )
 
 Option = Struct(
@@ -89,18 +109,14 @@ ClusterConfigMessage = Struct(
     "cluster_config",
     String("client_name"),
     String("client_version"),
-    UBInt32("folder_count"),
-    MetaArray(lambda c: c["folder_count"], Folder),
-    UBInt32("option_count"),
-    MetaArray(lambda c: c["option_count"], Option),
-    OptionalGreedyRange(UBInt8("leftovers")),
+    Array("folders", Folder),
+    Dict("options", String("key"), String("value")),
 )
 
 IndexMessage = Struct(
     "index_message",
     String("folder"),
-    UBInt32("file_count"),
-    MetaArray(lambda c: c["file_count"], FileInfo),
+    Array("files", FileInfo),
 )
 
 RequestMessage = Struct(
@@ -131,13 +147,13 @@ CloseMessage = Struct(
     String("reason"),
 )
 
-messages_switch = Switch("message", lambda c: c["header"].message_type, {
+messages_switch = Switch("message", lambda c: c["_"]["header"].message_type, {
     0: ClusterConfigMessage,
     1: IndexMessage,
     2: RequestMessage,
     3: ResponseMessage,
     4: PingMessage,
-    5: PongMessage, 
+    5: PongMessage,
     6: IndexUpdateMessage,
     7: CloseMessage,
 })
@@ -145,21 +161,24 @@ messages_switch = Switch("message", lambda c: c["header"].message_type, {
 packet = Struct("packet",
     BitStruct(
         "header",
-        BitField("version", 4),
+        ConstAdapter(BitField("message_version", 4), 0),
         BitField("message_id", 12),
         BitField("message_type", 8),
         Padding(7),
         Flag("compressed"),
     ),
-    UBInt32("length"),
-    #Switch("payload", lambda context: context["header"].compressed, {
-    #    False: messages_switch,
-    #    True: TunnelAdapter(
-    #        Lz4Blob("data"),
-    #        messages_switch,
-    #    )
-    #})
-    ClusterConfigMessage
+    LengthValueAdapter(
+        Sequence("payload",
+            UBInt32("length"),
+            Switch("payload", lambda context: context["_"]["header"].compressed, {
+                False: messages_switch,
+                True: TunnelAdapter(
+                    Lz4Blob("data"),
+                    messages_switch,
+                )
+            }),
+        ),
+    ),
 )
 
 packet_stream = Struct("packet_stream",
@@ -199,29 +218,112 @@ if not os.path.exists("client.key"):
         fp.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, private_key))
 
 
-# Initialize context
-ctx = SSL.Context(SSL.TLSv1_2_METHOD)
-#ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
-ctx.use_privatekey_file('client.key')
-ctx.use_certificate_file('client.crt')
-#ctx.load_verify_locations(os.path.join(os.cwd, 'CA.cert'))
+class ClientProtocol(object):
 
-# Set up client
-sock = SSL.Connection(ctx, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
-sock.connect(('localhost', 22000))
+    def __init__(self, hostname, port):
+        self.local_message_id = 0
 
+        ctx = SSL.Context(SSL.TLSv1_2_METHOD)
+        #ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
+        ctx.use_privatekey_file('client.key')
+        ctx.use_certificate_file('client.crt')
 
-data = ""
-while True:
-    print len(data)
-    data += sock.recv(1024)
-    container = packet_stream.parse(data)
-    print container
+        self.socket = SSL.Connection(ctx, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self.socket.connect((hostname, port))
 
-    for packet in container.packet:
+    def send_message(self, type, id=None, **kwargs):
+        self.socket.send(packet.build(Container(
+            header = Container(
+                message_version=0,
+                message_id=id or self.local_message_id,
+                message_type=type,
+                compressed=False,
+            ),
+            payload = Container(**kwargs),
+        )))
+        self.local_message_id += 1
+
+    def handle_0(self, packet):
+        """self.send_message(
+            0,
+            client_name = 'syncthing',
+            client_version = 'v0.0.0',
+            folders = [],
+            options = {
+                "name": "example",
+            },
+        )"""
+        pass
+
+    def handle_4(self, packet):
+        self.send_message(5, id=packet['header'].message_id)
+
+    def handle_packet(self, packet):
+        cb = getattr(self, "handle_%s" % packet.header.message_type, None)
+        if not cb:
+            return
         print packet
+        return cb(packet)
 
-    data = container.leftovers
+    def handle(self):
+        data = ""
+        while True:
+            data += self.socket.recv(1024)
+            if not data:
+                continue
 
-sock.shutdown()
-sock.close()
+            container = packet_stream.parse(data)
+            for packet in container.packet:
+                self.handle_packet(packet)
+
+            data = "".join(chr(x) for x in container.leftovers)
+
+        self.socket.shutdown()
+        self.socket.close()
+
+
+c = ClientProtocol("localhost", 22000)
+c.handle()
+
+
+"""
+Container:
+    header = Container:
+        version = 0
+        message_id = 1
+        message_type = 0
+        compressed = False
+    length = 60
+    payload = Container:
+        client_name = 'syncthing'
+        client_version = 'v0.10.5'
+        folder_count = 0
+        folder = []
+        option_count = 1
+        option = [
+            Container:
+                key = 'name'
+                value = 'curiosity'
+        ]
+        leftovers = []
+"""
+
+"""payload = packet.build(Container(
+    header = Container(
+        message_version=0,
+        message_id=0,
+        message_type=0,
+        compressed=False,
+    ),
+    payload = Container(
+        client_name = 'syncthing',
+        client_version = 'v0.0.0',
+        folders = [],
+        options = {
+            "name": "example",
+        },
+    ),
+))
+
+print packet.parse(payload)
+"""
