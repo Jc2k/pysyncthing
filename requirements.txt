@@ -3,3 +3,5 @@ construct
 pyopenssl
 
 flake8
+pytest
+coverage

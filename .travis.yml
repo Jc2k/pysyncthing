@@ -5,4 +5,6 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install -y libffi-dev libssl-dev
 
-script: flake8 pysyncthing.py
+script:
+  - coverage run $(which py.test)
+  - flake8 pysyncthing.py
