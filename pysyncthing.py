@@ -112,7 +112,7 @@ FileInfo = Struct(
 Folder = Struct(
     "folder",
     String("id"),
-    Array("files", FileInfo),
+    Array("devices", Device),
 )
 
 Option = Struct(
@@ -254,13 +254,11 @@ class ClientProtocol(object):
             ),
             payload = Container(**kwargs),
         ))
-        print binascii.hexlify(data)
-        #print packet.parse(data)
+        print packet.parse(data)
         self.socket.send(data)
         self.local_message_id += 1
 
     def handle_0(self, packet):
-        #print packet
         self.send_message(
             0,
             client_name = 'syncthing',
@@ -278,7 +276,7 @@ class ClientProtocol(object):
         cb = getattr(self, "handle_%s" % packet.header.message_type, None)
         if not cb:
             return
-        #print packet
+        print packet
         return cb(packet)
 
     def handle(self):
@@ -287,8 +285,6 @@ class ClientProtocol(object):
             data += self.socket.recv(1024)
             if not data:
                 continue
-
-            print binascii.hexlify(data)
 
             container = packet_stream.parse(data)
             for packet in container.packet:
