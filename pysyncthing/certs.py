@@ -1,7 +1,6 @@
 
 import os
-import socket
-from OpenSSL import SSL, crypto
+from OpenSSL import crypto
 
 
 def ensure_certs():

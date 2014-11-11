@@ -1,5 +1,5 @@
 import socket
-from OpenSSL import SSL, crypto
+from OpenSSL import SSL
 from construct import Container
 
 from .protocol import packet, packet_stream
@@ -66,8 +66,8 @@ class ClientConnection(ConnectionBase):
                 continue
 
             container = packet_stream.parse(data)
-            for packet in container.packet:
-                self.handle_packet(packet)
+            for p in container.packet:
+                self.handle_packet(p)
 
             data = "".join(chr(x) for x in container.leftovers)
 

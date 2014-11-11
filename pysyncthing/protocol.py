@@ -3,7 +3,7 @@ from construct.lib.py3compat import BytesIO
 from construct import \
     ExprAdapter, Struct, BitStruct, Flag, Padding, MetaArray, UBInt64, UBInt32, BitField, \
     Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, \
-    UBInt8, StringAdapter, Container, ConstAdapter, Subconstruct
+    UBInt8, StringAdapter, ConstAdapter, Subconstruct
 
 
 class PrefixActualLength(Subconstruct):
