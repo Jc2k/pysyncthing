@@ -1,25 +1,19 @@
 import lz4
 from construct import \
     ExprAdapter, Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter, Container, ConstAdapter
-
-
-class Lz4Adapter(Adapter):
-
-    def _encode(self, obj, context):
-        return lz4.dumps(obj)
-
-    def _decode(self, obj, context):
-        return lz4.loads(obj)
+import binascii
 
 
 def Lz4Blob(name, length_field=UBInt32("length")):
-    return Lz4Adapter(
+    return ExprAdapter(
         LengthValueAdapter(
             Sequence(name,
                 length_field,
                 Field("data", lambda ctx: ctx[length_field.name]),
             )
         ),
+        encoder=lambda obj, ctx: lz4.dumps(obj),
+        decoder=lambda obj, ctx: lz4.loads(obj),
     )
 
 
@@ -241,18 +235,20 @@ class ClientProtocol(object):
             ),
             payload = Container(**kwargs),
         ))
-        print packet.parse(data)
+        print binascii.hexlify(data)
+        #print packet.parse(data)
         self.socket.send(data)
         self.local_message_id += 1
 
     def handle_0(self, packet):
+        #print packet
         self.send_message(
             0,
             client_name = 'syncthing',
             client_version = 'v0.10.5',
             folders = [],
             options = {
-                "name": "example",
+                "name": "curiosity",
             },
         )
 
@@ -263,7 +259,7 @@ class ClientProtocol(object):
         cb = getattr(self, "handle_%s" % packet.header.message_type, None)
         if not cb:
             return
-        print packet
+        #print packet
         return cb(packet)
 
     def handle(self):
@@ -272,6 +268,8 @@ class ClientProtocol(object):
             data += self.socket.recv(1024)
             if not data:
                 continue
+
+            print binascii.hexlify(data)
 
             container = packet_stream.parse(data)
             for packet in container.packet:
