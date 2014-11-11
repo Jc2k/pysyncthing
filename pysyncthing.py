@@ -1,8 +1,15 @@
+
+import os
+import socket
+
 import lz4
 from construct.lib.py3compat import BytesIO
 from construct import \
-    ExprAdapter, Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter, Container, ConstAdapter, Subconstruct
-import binascii
+    ExprAdapter, Struct, BitStruct, Flag, Padding, MetaArray, UBInt64, UBInt32, BitField, \
+    Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, \
+    UBInt8, StringAdapter, Container, ConstAdapter, Subconstruct
+from OpenSSL import SSL, crypto
+
 
 class PrefixActualLength(Subconstruct):
 
@@ -13,7 +20,7 @@ class PrefixActualLength(Subconstruct):
     def _parse(self, stream, context):
         # Read and ignore the length field
         self.length_field._parse(stream, context)
-        return self.subcon._parse(stream ,context)
+        return self.subcon._parse(stream, context)
 
     def _build(self, obj, stream, context):
         inner_stream = BytesIO()
@@ -23,13 +30,15 @@ class PrefixActualLength(Subconstruct):
         stream.write(data)
 
     def _sizeof(self, context):
-        return self.length_field._sizeof(context) + self.subcon._sizeof(context)
+        return self.length_field._sizeof(context) + \
+            self.subcon._sizeof(context)
 
 
 def Lz4Blob(name, length_field=UBInt32("length")):
     return ExprAdapter(
         LengthValueAdapter(
-            Sequence(name,
+            Sequence(
+                name,
                 length_field,
                 Field("data", lambda ctx: ctx[length_field.name]),
             )
@@ -42,7 +51,8 @@ def Lz4Blob(name, length_field=UBInt32("length")):
 def String(name):
     return StringAdapter(
         LengthValueAdapter(
-            Sequence(name,
+            Sequence(
+                name,
                 UBInt32("length"),
                 Field("data", lambda ctx: ctx["length"]),
                 Padding(lambda ctx: (4 - ctx['length'] % 4) % 4),
@@ -53,7 +63,8 @@ def String(name):
 
 def Array(name, array_of):
     return LengthValueAdapter(
-        Sequence(name,
+        Sequence(
+            name,
             UBInt32("length"),
             MetaArray(lambda c: c["length"], array_of),
         ),
@@ -62,7 +73,8 @@ def Array(name, array_of):
 
 def Dict(name, key, value):
     return LengthValueAdapter(
-        Sequence(name,
+        Sequence(
+            name,
             UBInt32("length"),
             ExprAdapter(
                 MetaArray(lambda c: c["length"], Sequence("dict", key, value)),
@@ -76,7 +88,8 @@ def Dict(name, key, value):
 Device = Struct(
     "device",
     String("id"),
-    BitStruct("flags",
+    BitStruct(
+        "flags",
         Padding(15),
         BitField("priority", 2),
         Padding(12),
@@ -174,7 +187,8 @@ messages_switch = Switch("message", lambda c: c["header"].message_type, {
     7: CloseMessage,
 })
 
-packet = Struct("packet",
+packet = Struct(
+    "packet",
     BitStruct(
         "header",
         ConstAdapter(BitField("message_version", 4), 0),
@@ -194,14 +208,12 @@ packet = Struct("packet",
     ),
 )
 
-packet_stream = Struct("packet_stream",
+packet_stream = Struct(
+    "packet_stream",
     OptionalGreedyRange(packet),
     OptionalGreedyRange(UBInt8("leftovers")),
 )
 
-
-from OpenSSL import SSL, crypto
-import sys, os, select, socket
 
 if not os.path.exists("client.key"):
     print "Generating private key"
@@ -237,22 +249,25 @@ class ClientProtocol(object):
         self.local_message_id = 1
 
         ctx = SSL.Context(SSL.TLSv1_2_METHOD)
-        #ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
+        # ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
         ctx.use_privatekey_file('client.key')
         ctx.use_certificate_file('client.crt')
 
-        self.socket = SSL.Connection(ctx, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self.socket = SSL.Connection(
+            ctx,
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM),
+        )
         self.socket.connect((hostname, port))
 
     def send_message(self, type, id=None, **kwargs):
         data = packet.build(Container(
-            header = Container(
+            header=Container(
                 message_version=0,
                 message_id=id or self.local_message_id,
                 message_type=type,
                 compressed=False,
             ),
-            payload = Container(**kwargs),
+            payload=Container(**kwargs),
         ))
         print packet.parse(data)
         self.socket.send(data)
@@ -261,10 +276,10 @@ class ClientProtocol(object):
     def handle_0(self, packet):
         self.send_message(
             0,
-            client_name = 'syncthing',
-            client_version = 'v0.10.5',
-            folders = [],
-            options = {
+            client_name='syncthing',
+            client_version='v0.10.5',
+            folders=[],
+            options={
                 "name": "curiosity",
             },
         )
