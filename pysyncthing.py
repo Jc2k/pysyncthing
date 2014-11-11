@@ -1,7 +1,29 @@
 import lz4
+from construct.lib.py3compat import BytesIO
 from construct import \
-    ExprAdapter, Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter, Container, ConstAdapter
+    ExprAdapter, Struct, BitStruct, Flag, Padding, Bit, PascalString, MetaArray, UBInt64, UBInt32, UBInt16, Adapter, BitField, Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, UBInt8, Aligned, StringAdapter, Container, ConstAdapter, Subconstruct
 import binascii
+
+class PrefixActualLength(Subconstruct):
+
+    def __init__(self, subcon, length_field=UBInt32("length")):
+        super(PrefixActualLength, self).__init__(subcon)
+        self.length_field = length_field
+
+    def _parse(self, stream, context):
+        # Read and ignore the length field
+        self.length_field._parse(stream, context)
+        return self.subcon._parse(stream ,context)
+
+    def _build(self, obj, stream, context):
+        inner_stream = BytesIO()
+        self.subcon._build(obj, inner_stream, context)
+        data = inner_stream.getvalue()
+        self.length_field._build(len(data), stream, context)
+        stream.write(data)
+
+    def _sizeof(self, context):
+        return self.length_field._sizeof(context) + self.subcon._sizeof(context)
 
 
 def Lz4Blob(name, length_field=UBInt32("length")):
@@ -141,7 +163,7 @@ CloseMessage = Struct(
     String("reason"),
 )
 
-messages_switch = Switch("message", lambda c: c["_"]["header"].message_type, {
+messages_switch = Switch("message", lambda c: c["header"].message_type, {
     0: ClusterConfigMessage,
     1: IndexMessage,
     2: RequestMessage,
@@ -161,17 +183,14 @@ packet = Struct("packet",
         Padding(7),
         Flag("compressed"),
     ),
-    LengthValueAdapter(
-        Sequence("payload",
-            UBInt32("length"),
-            Switch("payload", lambda context: context["_"]["header"].compressed, {
-                False: messages_switch,
-                True: TunnelAdapter(
-                    Lz4Blob("data"),
-                    messages_switch,
-                )
-            }),
-        ),
+    PrefixActualLength(
+        Switch("payload", lambda context: context["header"].compressed, {
+            False: messages_switch,
+            True: TunnelAdapter(
+                Lz4Blob("data"),
+                messages_switch,
+            )
+        }),
     ),
 )
 
