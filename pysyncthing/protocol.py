@@ -1,14 +1,9 @@
-
-import os
-import socket
-
 import lz4
 from construct.lib.py3compat import BytesIO
 from construct import \
     ExprAdapter, Struct, BitStruct, Flag, Padding, MetaArray, UBInt64, UBInt32, BitField, \
     Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, \
     UBInt8, StringAdapter, Container, ConstAdapter, Subconstruct
-from OpenSSL import SSL, crypto
 
 
 class PrefixActualLength(Subconstruct):
@@ -213,103 +208,3 @@ packet_stream = Struct(
     OptionalGreedyRange(packet),
     OptionalGreedyRange(UBInt8("leftovers")),
 )
-
-
-if not os.path.exists("client.key"):
-    print "Generating private key"
-    private_key = crypto.PKey()
-    private_key.generate_key(crypto.TYPE_RSA, 3096)
-
-    print "Generating cert"
-    cert = crypto.X509()
-    subj = cert.get_subject()
-    subj.C = "US"
-    subj.ST = "Minnesota"
-    subj.L = "Minnetonka"
-    subj.O = "my company"
-    subj.OU = "my organization"
-    subj.CN = "syncthing"
-    cert.set_serial_number(1000)
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(10*365*24*60*60)
-    cert.set_issuer(subj)
-    cert.set_pubkey(private_key)
-    cert.sign(private_key, 'sha1')
-
-    with open("client.crt", "w") as fp:
-        fp.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-
-    with open("client.key", "w") as fp:
-        fp.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, private_key))
-
-
-class ClientProtocol(object):
-
-    def __init__(self, hostname, port):
-        self.local_message_id = 1
-
-        ctx = SSL.Context(SSL.TLSv1_2_METHOD)
-        # ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
-        ctx.use_privatekey_file('client.key')
-        ctx.use_certificate_file('client.crt')
-
-        self.socket = SSL.Connection(
-            ctx,
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-        )
-        self.socket.connect((hostname, port))
-
-    def send_message(self, type, id=None, **kwargs):
-        data = packet.build(Container(
-            header=Container(
-                message_version=0,
-                message_id=id or self.local_message_id,
-                message_type=type,
-                compressed=False,
-            ),
-            payload=Container(**kwargs),
-        ))
-        print packet.parse(data)
-        self.socket.send(data)
-        self.local_message_id += 1
-
-    def handle_0(self, packet):
-        self.send_message(
-            0,
-            client_name='syncthing',
-            client_version='v0.10.5',
-            folders=[],
-            options={
-                "name": "curiosity",
-            },
-        )
-
-    def handle_4(self, packet):
-        self.send_message(5, id=packet['header'].message_id)
-
-    def handle_packet(self, packet):
-        cb = getattr(self, "handle_%s" % packet.header.message_type, None)
-        if not cb:
-            return
-        print packet
-        return cb(packet)
-
-    def handle(self):
-        data = ""
-        while True:
-            data += self.socket.recv(1024)
-            if not data:
-                continue
-
-            container = packet_stream.parse(data)
-            for packet in container.packet:
-                self.handle_packet(packet)
-
-            data = "".join(chr(x) for x in container.leftovers)
-
-        self.socket.shutdown()
-        self.socket.close()
-
-
-c = ClientProtocol("localhost", 22000)
-c.handle()
