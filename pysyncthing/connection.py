@@ -44,31 +44,31 @@ class ClientConnection(ConnectionBase):
             client_name='syncthing',
             client_version='v0.10.5',
             folders=[
-              Container(
-                id = 'default',
-                devices = [
-                    Container(
-                        id = '\x05\x13\x1d8\x8a\xc3\xd5\xe1\xd5\xcd\xe1\xb7\xa7j\xff\xbfq\xaf/\x1fX\xf4\x86J\\\xd2\xc6p\x91\xed\x85\xa2',
-                        flags = Container(
-                            priority = 0,
-                            introducer = False,
-                            read_only = False,
-                            trusted = True,
+                Container(
+                    id='default',
+                    devices=[
+                        Container(
+                            id='\x05\x13\x1d8\x8a\xc3\xd5\xe1\xd5\xcd\xe1\xb7\xa7j\xff\xbfq\xaf/\x1fX\xf4\x86J\\\xd2\xc6p\x91\xed\x85\xa2',
+                            flags=Container(
+                                priority=0,
+                                introducer=False,
+                                read_only=False,
+                                trusted=True,
+                            ),
+                            max_local_version=0,
                         ),
-                        max_local_version = 0,
-                    ),
-                    Container(
-                        id = '\xcd\xb4\xc3MP\xa9%\xa8\x08Y\x10C)O\xe91q\x9d\xf1,\xb8\x94\x81\xc5\xb0\xecim+o\xd6\xb9',
-                        flags = Container(
-                            priority = 0,
-                            introducer = False,
-                            read_only = False,
-                            trusted = True,
-                        ),
-                        max_local_version = 0,
-                    )
-                ]
-              )
+                        Container(
+                            id='\xcd\xb4\xc3MP\xa9%\xa8\x08Y\x10C)O\xe91q\x9d\xf1,\xb8\x94\x81\xc5\xb0\xecim+o\xd6\xb9',
+                            flags=Container(
+                                priority=0,
+                                introducer=False,
+                                read_only=False,
+                                trusted=True,
+                            ),
+                            max_local_version=0,
+                        )
+                    ]
+                )
             ],
             options={
                 "name": "example",
