@@ -14,7 +14,9 @@ class PrefixActualLength(Subconstruct):
 
     def _parse(self, stream, context):
         # Read and ignore the length field
-        self.length_field._parse(stream, context)
+        length = self.length_field._parse(stream, context)
+        # This is grim, so grim..
+        context.header.message_length = length
         return self.subcon._parse(stream, context)
 
     def _build(self, obj, stream, context):
@@ -29,15 +31,9 @@ class PrefixActualLength(Subconstruct):
             self.subcon._sizeof(context)
 
 
-def Lz4Blob(name, length_field=UBInt32("length")):
+def Lz4Blob(name):
     return ExprAdapter(
-        LengthValueAdapter(
-            Sequence(
-                name,
-                length_field,
-                Field("data", lambda ctx: ctx[length_field.name]),
-            )
-        ),
+        Field("data", lambda ctx: ctx.header.message_length),
         encoder=lambda obj, ctx: lz4.dumps(obj),
         decoder=lambda obj, ctx: lz4.loads(obj),
     )
@@ -89,7 +85,7 @@ Device = Struct(
         BitField("priority", 2),
         Padding(12),
         Flag("introducer"),
-        Flag("read-only"),
+        Flag("read_only"),
         Flag("trusted")
     ),
     UBInt64("max_local_version"),
@@ -97,7 +93,7 @@ Device = Struct(
 
 BlockInfo = Struct(
     "block_info",
-    UBInt64("blocksize"),
+    UBInt32("blocksize"),
     String("hash"),
 )
 
@@ -115,6 +111,7 @@ FileInfo = Struct(
     UBInt64("modified"),
     UBInt64("version"),
     UBInt64("local_version"),
+    Array("blocks", BlockInfo),
 )
 
 Folder = Struct(
