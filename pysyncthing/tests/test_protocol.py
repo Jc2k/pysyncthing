@@ -6,7 +6,7 @@ from pysyncthing.protocol import packet
 
 class TestClusterConfigMessage(unittest.TestCase):
 
-    EXAMPLE1 = "\x00\x01\x00\x01\x00\x00\x00>\x00\x00\x00:8\x00\x00\x00\xe1\x00\x00\x00\tsyncthing\x00\x01\x00\x81\x07v0.10.5\r\x00\xf0\t\x00\x00\x00\x01\x00\x00\x00\x04name\x00\x00\x00\x07example\x00"
+    EXAMPLE1 = "\x00\x01\x00\x00\x00\x00\x008\x00\x00\x00\tsyncthing\x00\x00\x00\x00\x00\x00\x07v0.10.5\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x04name\x00\x00\x00\x07example\x00"
 
     def test_parse_example1(self):
         p = packet.parse(self.EXAMPLE1)
@@ -20,7 +20,7 @@ class TestClusterConfigMessage(unittest.TestCase):
                 message_version=0,
                 message_id=1,
                 message_type=0,
-                compressed=True,
+                compressed=False,
             ),
             payload=Container(
                 client_name='syncthing',
