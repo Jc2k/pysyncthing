@@ -93,7 +93,7 @@ Device = Struct(
 
 BlockInfo = Struct(
     "block_info",
-    UBInt32("blocksize"),
+    UBInt32("size"),
     String("hash"),
 )
 

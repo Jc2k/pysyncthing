@@ -17,7 +17,7 @@ class ConnectionBase(object):
             ),
             payload=Container(**kwargs),
         ))
-        print packet.parse(data)
+        print "SEND", packet.parse(data)
         self.socket.send(data)
         self.local_message_id += 1
 
@@ -75,11 +75,31 @@ class ClientConnection(ConnectionBase):
             },
         )
 
+    def handle_1(self, packet):
+        self.send_message(
+            1,
+            folder="default",
+            files=[],
+        )
+
+        for file in packet.payload.files:
+            offset = 0
+            for block in file.blocks:
+                self.send_message(
+                    2,
+                    folder=packet.payload.folder,
+                    name=file.name,
+                    offset=offset,
+                    size=block.size,
+                )
+                # FIXME: Verify hash
+                offset += 0
+
     def handle_4(self, packet):
         self.send_message(5, id=packet['header'].message_id)
 
     def handle_packet(self, packet):
-        print packet
+        print "RECV", packet
         cb = getattr(self, "handle_%s" % packet.header.message_type, None)
         if not cb:
             return
