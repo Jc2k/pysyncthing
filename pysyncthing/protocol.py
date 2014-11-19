@@ -3,7 +3,7 @@ from construct.lib.py3compat import BytesIO
 from construct import \
     ExprAdapter, Struct, BitStruct, Flag, Padding, MetaArray, UBInt64, UBInt32, BitField, \
     Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, \
-    UBInt8, StringAdapter, ConstAdapter, Subconstruct
+    UBInt8, StringAdapter, ConstAdapter, Subconstruct, Magic
 
 
 class PrefixActualLength(Subconstruct):
@@ -204,4 +204,33 @@ packet_stream = Struct(
     "packet_stream",
     OptionalGreedyRange(packet),
     OptionalGreedyRange(UBInt8("leftovers")),
+)
+
+Address = Struct(
+    "address",
+   String("ip"),
+   BitStruct(
+       "bits",
+       BitsField("port", 12),
+       Padding(16),
+   )
+)
+
+Device = Struct(
+    "device",
+    String("id"),
+    Array(Address),
+)
+
+Announcement = Struct(
+    "announcement",
+    Magic(0x9D79BC39),
+    Device,
+    Array(Device),
+)
+
+Query = Struct(
+    "query",
+    Magic(0x2CA856F5),
+    String("id"),
 )
