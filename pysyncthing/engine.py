@@ -1,4 +1,4 @@
-from gi.reposiory import Gio
+from gi.repository import Gio, GLib
 from .certs import ensure_certs
 from .server import SyncServer
 
@@ -13,7 +13,7 @@ class Engine(object):
         self.folders = []
         self.devices = {}
 
-        # FIXME: Generate and store certs in GNOME-keyring
+        # FIXME: Generate and store certs in GNOME-keyring
         ensure_certs()
         self.certificate = Gio.TlsCertificate.new_from_files("client.crt", "client.key")
 

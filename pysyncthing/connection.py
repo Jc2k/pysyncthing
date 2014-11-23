@@ -66,15 +66,15 @@ class ConnectionBase(object):
         return cb(packet)
 
     def _read_packet(self):
-        self.inp.read_async(1024, self._read_packet_finish)
+        self.inp.read_bytes_async(1024, 0, None, self._read_packet_finish)
 
-    def _read_packet_finish(self, conn, result, user_data):
-        results = conn.read_async_finish(result)
-        print results
-        return
-
+    def _read_packet_finish(self, conn, result):
+        data = self.inp.read_bytes_finish(result).get_data()
         self._read_buffer += data
+
         container = packet_stream.parse(self._read_buffer)
         for p in container.packet:
             self.handle_packet(p)
         self._read_buffer = "".join(chr(x) for x in container.leftovers)
+
+        self._read_packet()

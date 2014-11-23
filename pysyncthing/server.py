@@ -6,6 +6,7 @@ from pysyncthing.connection import ConnectionBase
 class SyncServer(object):
 
     def __init__(self, engine):
+        self.engine = engine
         self.pending_connections = []
 
     def start(self):
@@ -50,10 +51,5 @@ class IncomingConnection(ConnectionBase):
         self._read_packet()
 
     def handle_1(self, payload):
-        # FIXME: Workout name and register with engine...
-
-
-ml = GLib.MainLoop()
-s = Service()
-s.start()
-ml.run()
+        # FIXME: Workout name and register with engine...
+        pass
