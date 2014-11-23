@@ -3,13 +3,10 @@ from gi.repository import Gio, GLib
 from pysyncthing.connection import ConnectionBase
 
 
-class Service(object):
+class SyncServer(object):
 
-    def __init__(self):
+    def __init__(self, engine):
         self.pending_connections = []
-
-        # FIXME: The engine should do this...
-        self.certificate = Gio.TlsCertificate.new_from_files("client.crt", "client.key")
 
     def start(self):
         self.service = Gio.SocketService.new()
@@ -21,15 +18,16 @@ class Service(object):
         # Setup dispatcher to deal with incoming connections
         self.service.connect("incoming", self._incoming)
 
+    def stop(self):
+        self.service.stop()
+
     def _incoming(self, socket_service, connection, source_object):
         # self.active_connections.append(connection)
-        conn = IncomingConnection(self, connection)
+        conn = IncomingConnection(self.engine, connection)
         self.pending_connections.append(conn)
 
 
 class IncomingConnection(ConnectionBase):
-
-    local_message_id = 0
 
     def __init__(self, engine, connection):
         super(IncomingConnection, self).__init__(engine)
@@ -48,7 +46,7 @@ class IncomingConnection(ConnectionBase):
         self.inp = self.conn.get_input_stream()
         self.outp = self.conn.get_output_stream()
 
-        self.send_hello("", "", folders=[], options={"name": "curiosity"})
+        self.send_hello(folders=[], options={"name": self.engine.name})
         self._read_packet()
 
     def handle_1(self, payload):

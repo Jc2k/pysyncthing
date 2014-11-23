@@ -5,6 +5,7 @@ from .protocol import packet, packet_stream
 class ConnectionBase(object):
 
     def __init__(self, engine):
+        self.local_message_id = 0
         self.engine = engine
         self._read_buffer = ""
 
@@ -22,11 +23,11 @@ class ConnectionBase(object):
         self.outp.write(data)
         self.local_message_id += 1
 
-    def send_hello(self, client_name, client_version, folders, options):
+    def send_hello(self, folders, options):
         self.send_message(
             0,
-            client_name=client_name,
-            client_version='v0.10.5',
+            client_name=self.engine.CLIENT_NAME,
+            client_version=self.engine.CLIENT_VERSION,
             folders=[
                 Container(
                     id='default',

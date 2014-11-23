@@ -1,6 +1,3 @@
-from .connection import ClientConnection
-from .certs import ensure_certs
+from .engine import Engine
 
-ensure_certs()
-c = ClientConnection("localhost", 22000)
-c.handle()
+Engine("example").run()
