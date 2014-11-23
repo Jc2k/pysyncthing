@@ -47,26 +47,3 @@ class ClientConnection(ConnectionBase):
 
     def handle_4(self, payload):
         self.send_message(5, id=packet['header'].message_id)
-
-    def handle_packet(self, payload):
-        print "RECV", packet
-        cb = getattr(self, "handle_%s" % packet.header.message_type, None)
-        if not cb:
-            return
-        return cb(packet)
-
-    def handle(self):
-        data = ""
-        while True:
-            data += self.socket.recv(1024)
-            if not data:
-                continue
-
-            container = packet_stream.parse(data)
-            for p in container.packet:
-                self.handle_packet(p)
-
-            data = "".join(chr(x) for x in container.leftovers)
-
-        self.socket.shutdown()
-        self.socket.close()
