@@ -29,7 +29,7 @@ class AnnounceLocal(object):
         data = Announcement.build(Container(
             device=Container(
                 id="public key?",
-                addresses = [
+                addresses=[
                     Container(
                         ip="",
                         port=2200,
@@ -59,6 +59,5 @@ class DiscoverLocal(object):
         self.sock.bind(self.address, True)
         self.sock.set_option(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-        #while True:
+        # while True:
         #    print self.sock.receive(1)
-

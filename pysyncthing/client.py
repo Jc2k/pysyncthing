@@ -1,6 +1,6 @@
 from gi.repository import Gio
 # from construct import Container
-from .protocol import packet, packet_stream
+from .protocol import packet
 from .connection import ConnectionBase
 
 
