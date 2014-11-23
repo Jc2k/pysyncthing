@@ -1,7 +1,4 @@
-import socket
-from OpenSSL import SSL
 from construct import Container
-
 from .protocol import packet, packet_stream
 
 
@@ -18,30 +15,13 @@ class ConnectionBase(object):
             payload=Container(**kwargs),
         ))
         print "SEND", packet.parse(data)
-        self.socket.send(data)
+        self.outp.write(data)
         self.local_message_id += 1
 
-
-class ClientConnection(ConnectionBase):
-
-    def __init__(self, hostname, port):
-        self.local_message_id = 1
-
-        ctx = SSL.Context(SSL.TLSv1_2_METHOD)
-        # ctx.set_verify(SSL.VERIFY_PEER, verify_cb) # Demand a certificate
-        ctx.use_privatekey_file('client.key')
-        ctx.use_certificate_file('client.crt')
-
-        self.socket = SSL.Connection(
-            ctx,
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM),
-        )
-        self.socket.connect((hostname, port))
-
-    def handle_0(self, packet):
+    def send_hello(self, client_name, client_version, folders, options):
         self.send_message(
             0,
-            client_name='syncthing',
+            client_name=client_name,
             client_version='v0.10.5',
             folders=[
                 Container(
@@ -70,33 +50,8 @@ class ClientConnection(ConnectionBase):
                     ]
                 )
             ],
-            options={
-                "name": "example",
-            },
+            options=options or {},
         )
-
-    def handle_1(self, packet):
-        self.send_message(
-            1,
-            folder="default",
-            files=[],
-        )
-
-        for file in packet.payload.files:
-            offset = 0
-            for block in file.blocks:
-                self.send_message(
-                    2,
-                    folder=packet.payload.folder,
-                    name=file.name,
-                    offset=offset,
-                    size=block.size,
-                )
-                # FIXME: Verify hash
-                offset += 0
-
-    def handle_4(self, packet):
-        self.send_message(5, id=packet['header'].message_id)
 
     def handle_packet(self, packet):
         print "RECV", packet
@@ -108,7 +63,7 @@ class ClientConnection(ConnectionBase):
     def handle(self):
         data = ""
         while True:
-            data += self.socket.recv(1024)
+            data += self.inp.read(1024)
             if not data:
                 continue
 
@@ -117,6 +72,3 @@ class ClientConnection(ConnectionBase):
                 self.handle_packet(p)
 
             data = "".join(chr(x) for x in container.leftovers)
-
-        self.socket.shutdown()
-        self.socket.close()

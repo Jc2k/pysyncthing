@@ -1,23 +1,72 @@
+from gi.repository import Gio
+# from construct import Container
+from .protocol import packet, packet_stream
+from .connection import ConnectionBase
 
 
-class ClientFactory(object):
+class ClientConnection(ConnectionBase):
 
-    def __init__(self):
-        self.discoverers = [
-        ]
+    def __init__(self, engine, hostname, port):
+        super(ClientConnection, self).__init__()
 
-    def connect_by_id(self, id):
-        hostname = None
+        self.engine = engine
 
-        for backend in self.discoverers:
-            hostname = backend.lookup(id)
-            if hostname:
-                break
- 
-        if not hostname:
-            raise ValueError("Unable to find ID" % id)
+        client = Gio.SocketClient()
+        connection = client.connect_to_host(hostname, port, None)
 
-        return self.connect(*hostname.split(":"))
+        self.conn = Gio.TlsClientConnection(connection, None)
+        self.conn.set_certificate(self.engine.certificate)
 
-    def connect(self, hostname, port):
-        pass
+        self.inp = self.conn.get_input_stream()
+        self.outp = self.conn.get_output_stream()
+        self.send_hello()
+        self.handle()
+
+    def handle_0(self, payload):
+        self.send_hello("syncthing", "v10.0", [], {})
+
+    def handle_1(self, payload):
+        self.send_message(
+            1,
+            folder="default",
+            files=[],
+        )
+
+        for file in packet.payload.files:
+            offset = 0
+            for block in file.blocks:
+                self.send_message(
+                    2,
+                    folder=packet.payload.folder,
+                    name=file.name,
+                    offset=offset,
+                    size=block.size,
+                )
+                # FIXME: Verify hash
+                offset += 0
+
+    def handle_4(self, payload):
+        self.send_message(5, id=packet['header'].message_id)
+
+    def handle_packet(self, payload):
+        print "RECV", packet
+        cb = getattr(self, "handle_%s" % packet.header.message_type, None)
+        if not cb:
+            return
+        return cb(packet)
+
+    def handle(self):
+        data = ""
+        while True:
+            data += self.socket.recv(1024)
+            if not data:
+                continue
+
+            container = packet_stream.parse(data)
+            for p in container.packet:
+                self.handle_packet(p)
+
+            data = "".join(chr(x) for x in container.leftovers)
+
+        self.socket.shutdown()
+        self.socket.close()
