@@ -1,7 +1,7 @@
 import lz4
 from construct.lib.py3compat import BytesIO
 from construct import \
-    ExprAdapter, Struct, BitStruct, Flag, Padding, MetaArray, UBInt64, UBInt32, BitField, \
+    ExprAdapter, Struct, BitStruct, Flag, Padding, MetaArray, UBInt16, UBInt64, UBInt32, BitField, \
     Switch, TunnelAdapter, LengthValueAdapter, Sequence, Field, OptionalGreedyRange, \
     UBInt8, StringAdapter, ConstAdapter, Subconstruct, Magic
 
@@ -209,28 +209,25 @@ packet_stream = Struct(
 Address = Struct(
     "address",
    String("ip"),
-   BitStruct(
-       "bits",
-       BitsField("port", 12),
-       Padding(16),
-   )
+   UBInt16("port"),
+   Padding(16),
 )
 
 Device = Struct(
     "device",
     String("id"),
-    Array(Address),
+    Array("addresses", Address),
 )
 
 Announcement = Struct(
     "announcement",
-    Magic(0x9D79BC39),
+    #Magic(0x9D79BC39),
     Device,
-    Array(Device),
+    Array("devices", Device),
 )
 
 Query = Struct(
     "query",
-    Magic(0x2CA856F5),
+    #Magic(0x2CA856F5),
     String("id"),
 )

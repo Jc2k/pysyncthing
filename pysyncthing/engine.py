@@ -1,6 +1,7 @@
 from gi.repository import Gio, GLib
 from .certs import ensure_certs
 from .server import SyncServer
+from .announce.local import AnnounceLocal, DiscoverLocal
 
 
 class Engine(object):
@@ -19,6 +20,12 @@ class Engine(object):
 
         self.server = SyncServer(self)
 
+        self.discovery = [
+            AnnounceLocal(self),
+            DiscoverLocal(self),
+        ]
+
     def run(self):
         self.server.start()
+        [d.start() for d in self.discovery]
         GLib.MainLoop().run()
