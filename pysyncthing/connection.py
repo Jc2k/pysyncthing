@@ -4,6 +4,10 @@ from .protocol import packet, packet_stream
 
 class ConnectionBase(object):
 
+    def __init__(self, engine):
+        self.engine = engine
+        self._read_buffer = ""
+
     def send_message(self, type, id=None, **kwargs):
         data = packet.build(Container(
             header=Container(
@@ -60,15 +64,16 @@ class ConnectionBase(object):
             return
         return cb(packet)
 
-    def handle(self):
-        data = ""
-        while True:
-            data += self.inp.read(1024)
-            if not data:
-                continue
+    def _read_packet(self):
+        self.inp.read_async(1024, self._read_packet_finish)
 
-            container = packet_stream.parse(data)
-            for p in container.packet:
-                self.handle_packet(p)
+    def _read_packet_finish(self, conn, result, user_data):
+        results = conn.read_async_finish(result)
+        print results
+        return
 
-            data = "".join(chr(x) for x in container.leftovers)
+        self._read_buffer += data
+        container = packet_stream.parse(self._read_buffer)
+        for p in container.packet:
+            self.handle_packet(p)
+        self._read_buffer = "".join(chr(x) for x in container.leftovers)

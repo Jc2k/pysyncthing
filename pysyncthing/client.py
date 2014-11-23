@@ -20,7 +20,7 @@ class ClientConnection(ConnectionBase):
         self.inp = self.conn.get_input_stream()
         self.outp = self.conn.get_output_stream()
         self.send_hello()
-        self.handle()
+        self._read_packet()
 
     def handle_0(self, payload):
         self.send_hello("syncthing", "v10.0", [], {})

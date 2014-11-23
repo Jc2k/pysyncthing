@@ -6,7 +6,7 @@ from pysyncthing.connection import ConnectionBase
 class Service(object):
 
     def __init__(self):
-        self.active_connections = []
+        self.pending_connections = []
 
         # FIXME: The engine should do this...
         self.certificate = Gio.TlsCertificate.new_from_files("client.crt", "client.key")
@@ -23,16 +23,16 @@ class Service(object):
 
     def _incoming(self, socket_service, connection, source_object):
         # self.active_connections.append(connection)
-        conn = IncomingConnection(connection, self)
-        self.active_connections.append(conn)
+        conn = IncomingConnection(self, connection)
+        self.pending_connections.append(conn)
 
 
 class IncomingConnection(ConnectionBase):
 
     local_message_id = 0
 
-    def __init__(self, connection, engine):
-        super(IncomingConnection, self).__init__()
+    def __init__(self, engine, connection):
+        super(IncomingConnection, self).__init__(engine)
         self.conn = Gio.TlsServerConnection.new(connection, engine.certificate)
         # self.conn.set_property("authentication-mode", Gio.TlsAuthenticationMode.REQUIRED)
         self.conn.connect("accept-certificate", self._accept_certificate)
@@ -49,10 +49,10 @@ class IncomingConnection(ConnectionBase):
         self.outp = self.conn.get_output_stream()
 
         self.send_hello("", "", folders=[], options={"name": "curiosity"})
+        self._read_packet()
 
-    def send_raw(self, data):
-        # FIXME: This can go away after moving to GTlsClientConnection...
-        self.outp.write(data)
+    def handle_1(self, payload):
+        # FIXME: Workout name and register with engine...
 
 
 ml = GLib.MainLoop()
