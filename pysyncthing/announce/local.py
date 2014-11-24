@@ -1,5 +1,5 @@
 
-from gi.repository import Gio
+from gi.repository import GLib, Gio
 import socket
 from construct import Container
 
@@ -56,7 +56,13 @@ class DiscoverLocal(object):
             Gio.SocketType.DATAGRAM,
             Gio.SocketProtocol.UDP,
         )
-        self.sock.bind(self.address, True)
+
+        try:
+            self.sock.bind(self.address, True)
+        except GLib.GError as e:
+            print "Local discovery not available: {}".format(e)
+            return
+
         self.sock.set_option(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         # while True:
