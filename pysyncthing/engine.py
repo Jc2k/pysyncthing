@@ -1,5 +1,5 @@
 from gi.repository import Gio, GLib
-from .certs import ensure_certs
+from .certs import ensure_certs, get_device_id
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
 
@@ -17,6 +17,7 @@ class Engine(object):
         # FIXME: Generate and store certs in GNOME-keyring
         ensure_certs()
         self.certificate = Gio.TlsCertificate.new_from_files("client.crt", "client.key")
+        self.device_id = get_device_id(self.certificate.get_property("certificate-pem"))
 
         self.server = SyncServer(self)
 
@@ -26,6 +27,10 @@ class Engine(object):
         ]
 
     def run(self):
+        print "Starting pysyncthing"
+        print "pysyncthing 0.0.0"
+        print "My ID: ", self.device_id
+
         self.server.start()
         [d.start() for d in self.discovery]
         GLib.MainLoop().run()

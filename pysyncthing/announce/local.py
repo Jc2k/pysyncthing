@@ -28,7 +28,7 @@ class AnnounceLocal(object):
     def _broadcast(self):
         data = Announcement.build(Container(
             device=Container(
-                id="public key?",
+                id=self.engine.device_id,
                 addresses=[
                     Container(
                         ip="",
