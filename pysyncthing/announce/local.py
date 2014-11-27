@@ -1,3 +1,4 @@
+import ctypes
 
 from gi.repository import GLib, Gio
 import socket
@@ -65,5 +66,12 @@ class DiscoverLocal(object):
 
         self.sock.set_option(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-        # while True:
-        #    print self.sock.receive(1)
+        self._channel = GLib.IOChannel.unix_new(self.sock.get_fd())
+        self._channel.add_watch(GLib.IO_IN, self._handle)
+
+    def _handle(self, io, flags):
+        p = ctypes.create_string_buffer(1024)
+        if not self.sock.receive(p):
+            return False
+        print ctypes.sizeof(p), p.raw, p.value
+        return True
