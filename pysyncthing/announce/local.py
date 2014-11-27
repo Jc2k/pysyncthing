@@ -1,4 +1,4 @@
-import ctypes
+import socket
 
 from gi.repository import GLib, Gio
 import socket
@@ -25,8 +25,10 @@ class AnnounceLocal(object):
         # self.sock.set_option(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self._broadcast()
+        self._loop_id = GLib.timeout_add_seconds(30, self._broadcast, None)
 
-    def _broadcast(self):
+    def _broadcast(self, *args):
+        print args
         data = Announcement.build(Container(
             device=Container(
                 id=self.engine.device_fingerprint,
@@ -39,7 +41,7 @@ class AnnounceLocal(object):
             ),
             devices=[],
         ))
-        self.sock.send_to(self.address, data)
+        self.sock.send_to(self.address, data, None)
 
 
 class DiscoverLocal(object):
@@ -52,26 +54,18 @@ class DiscoverLocal(object):
         )
 
     def start(self):
-        self.sock = Gio.Socket.new(
-            Gio.SocketFamily.IPV4,
-            Gio.SocketType.DATAGRAM,
-            Gio.SocketProtocol.UDP,
-        )
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.sock.bind(('', 21025))
 
-        try:
-            self.sock.bind(self.address, True)
-        except GLib.GError as e:
-            print "Local discovery not available: {}".format(e)
-            return
-
-        self.sock.set_option(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-        self._channel = GLib.IOChannel.unix_new(self.sock.get_fd())
+        self._channel = GLib.IOChannel.unix_new(self.sock.fileno())
         self._channel.add_watch(GLib.IO_IN, self._handle)
 
     def _handle(self, io, flags):
-        p = ctypes.create_string_buffer(1024)
-        if not self.sock.receive(p):
+        data, address = self.sock.recvfrom(1024)
+        if not len(data):
             return False
-        print ctypes.sizeof(p), p.raw, p.value
+        packet = Announcement.parse(data)
+        print packet
+        print address
         return True
