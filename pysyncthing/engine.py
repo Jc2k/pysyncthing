@@ -1,5 +1,5 @@
 from gi.repository import Gio, GLib
-from .certs import ensure_certs, get_device_id
+from .certs import ensure_certs, get_device_id, get_fingerprint
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
 
@@ -17,7 +17,11 @@ class Engine(object):
         # FIXME: Generate and store certs in GNOME-keyring
         ensure_certs()
         self.certificate = Gio.TlsCertificate.new_from_files("client.crt", "client.key")
-        self.device_id = get_device_id(self.certificate.get_property("certificate-pem"))
+
+        pem = self.certificate.get_property("certificate-pem")
+        self.device_fingerprint = get_fingerprint(pem)
+        pem = self.certificate.get_property("certificate-pem")
+        self.device_id = get_device_id(pem)
 
         self.server = SyncServer(self)
 

@@ -15,9 +15,13 @@ def generate_check_character(input):
     return LUHN_ALPHABET[idx]
 
 
-def get_device_id(pem):
+def get_fingerprint(pem):
     key = a2b_base64(''.join(pem.splitlines()[1:-1]))
-    fingerprint = hashlib.sha256(key).digest()
+    return hashlib.sha256(key).digest()
+
+
+def get_device_id(pem):
+    fingerprint = get_fingerprint(pem)
     b32 = base64.b32encode(fingerprint).rstrip("=")
 
     def split(data, step):
