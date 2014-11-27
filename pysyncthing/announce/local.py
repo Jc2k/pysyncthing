@@ -1,7 +1,6 @@
 import socket
 
 from gi.repository import GLib, Gio
-import socket
 from construct import Container
 
 from ..protocol import Announcement
