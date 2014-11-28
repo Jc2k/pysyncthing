@@ -51,6 +51,7 @@ class DiscoverLocal(object):
             Gio.InetAddress.new_any(Gio.SocketFamily.IPV4),
             port,
         )
+        self.devices = {}
 
     def start(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -65,6 +66,5 @@ class DiscoverLocal(object):
         if not len(data):
             return False
         packet = Announcement.parse(data)
-        print packet
-        print address
+        self.devices[packet.id] = packet
         return True
