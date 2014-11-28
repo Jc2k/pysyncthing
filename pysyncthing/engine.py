@@ -1,5 +1,5 @@
 from gi.repository import Gio, GLib
-from .certs import ensure_certs, get_device_id, get_fingerprint
+from .certs import ensure_certs, get_device_id, get_fingerprint, get_fingerprint_from_device_id
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
 
@@ -29,6 +29,21 @@ class Engine(object):
             AnnounceLocal(self),
             DiscoverLocal(self),
         ]
+
+        print self.get_device("YNOKRE2-UTJMUDT-BQXMFFC-R5OTPZY-H2LGIMO-XUME4RW-KSA3ZCF-2PVPBQI")
+
+    def get_device(self, device_id):
+        if device_id in self.devices:
+            return self.devices[device_id]
+
+        fingerprint = get_fingerprint_from_device_id(device_id)
+        for agent in self.discovery:
+            device = agent.lookup(fingerprint)
+            if device:
+                self.devices[device_id] = device
+                return device
+
+        return None
 
     def run(self):
         print "Starting pysyncthing"

@@ -26,8 +26,10 @@ class AnnounceLocal(object):
         self._broadcast()
         self._loop_id = GLib.timeout_add_seconds(30, self._broadcast, None)
 
+    def lookup(self, device_id):
+        return None
+
     def _broadcast(self, *args):
-        print args
         data = Announcement.build(Container(
             device=Container(
                 id=self.engine.device_fingerprint,
@@ -60,6 +62,9 @@ class DiscoverLocal(object):
 
         self._channel = GLib.IOChannel.unix_new(self.sock.fileno())
         self._channel.add_watch(GLib.IO_IN, self._handle)
+
+    def lookup(self, device_id):
+        return self.devices.get(device_id, None)
 
     def _handle(self, io, flags):
         data, address = self.sock.recvfrom(1024)

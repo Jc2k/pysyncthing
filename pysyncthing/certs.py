@@ -20,15 +20,22 @@ def get_fingerprint(pem):
     return hashlib.sha256(key).digest()
 
 
+def _split(data, step):
+    return [data[x:x+step] for x in range(0, len(data), step)]
+
+
 def get_device_id(pem):
     fingerprint = get_fingerprint(pem)
     b32 = base64.b32encode(fingerprint).rstrip("=")
 
-    def split(data, step):
-        return [data[x:x+step] for x in range(0, len(data), step)]
+    chunks = [x + generate_check_character(x) for x in _split(b32, 13)]
+    return "-".join(_split("".join(chunks), 7))
 
-    chunks = [x + generate_check_character(x) for x in split(b32, 13)]
-    return "-".join(split("".join(chunks), 7))
+
+def get_fingerprint_from_device_id(device_id):
+    device_id = device_id.replace("-", "")
+    b32 = "".join(x[:13] for x in  _split(device_id, 14)) + "===="
+    return base64.b32decode(b32)
 
 
 def ensure_certs():
