@@ -1,5 +1,10 @@
+import logging
+
 from construct import Container
 from .protocol import packet, packet_stream
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionBase(object):
@@ -19,7 +24,7 @@ class ConnectionBase(object):
             ),
             payload=Container(**kwargs),
         ))
-        print "SEND", packet.parse(data)
+        logger.debug("SEND: %s", packet.parse(data))
         self.outp.write(data)
         self.local_message_id += 1
 
@@ -59,7 +64,7 @@ class ConnectionBase(object):
         )
 
     def handle_packet(self, packet):
-        print "RECV", packet
+        logger.debug("RECV: %s", packet)
         cb = getattr(self, "handle_%s" % packet.header.message_type, None)
         if not cb:
             return

@@ -1,7 +1,12 @@
+import logging
+
 from gi.repository import Gio, GLib
 from .certs import ensure_certs, get_device_id, get_fingerprint
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
+
+
+logger = logging.getLogger(__name__)
 
 
 class Engine(object):
@@ -31,9 +36,9 @@ class Engine(object):
         ]
 
     def run(self):
-        print "Starting pysyncthing"
-        print "pysyncthing 0.0.0"
-        print "My ID: ", self.device_id
+        logger.info("Starting pysyncthing")
+        logger.info("pysyncthing 0.0.0")
+        logger.info("My ID: %s", self.device_id)
 
         self.server.start()
         [d.start() for d in self.discovery]

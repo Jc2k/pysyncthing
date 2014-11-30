@@ -1,9 +1,13 @@
 import socket
+import logging
 
 from gi.repository import GLib, Gio
 from construct import Container
 
 from ..protocol import Announcement
+
+
+logger = logging.getLogger(__name__)
 
 
 class AnnounceLocal(object):
@@ -27,7 +31,6 @@ class AnnounceLocal(object):
         self._loop_id = GLib.timeout_add_seconds(30, self._broadcast, None)
 
     def _broadcast(self, *args):
-        print args
         data = Announcement.build(Container(
             device=Container(
                 id=self.engine.device_fingerprint,
@@ -58,7 +61,7 @@ class DiscoverLocal(object):
         try:
             self.sock.bind(('', 21025))
         except socket.error:
-            print "Local discovery not available"
+            logger.warning("Local discovery not available")
             return
         self._channel = GLib.IOChannel.unix_new(self.sock.fileno())
         self._channel.add_watch(GLib.IO_IN, self._handle)
@@ -68,6 +71,5 @@ class DiscoverLocal(object):
         if not len(data):
             return False
         packet = Announcement.parse(data)
-        print packet
-        print address
+        logger.debug("%s %s", packet, address)
         return True

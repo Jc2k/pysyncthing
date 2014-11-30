@@ -1,9 +1,12 @@
-
+import logging
 import os
 import hashlib
 import base64
 from binascii import a2b_base64
 from OpenSSL import crypto
+
+
+logger = logging.getLogger(__name__)
 
 LUHN_ALPHABET = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
 
@@ -33,11 +36,11 @@ def get_device_id(pem):
 
 def ensure_certs():
     if not os.path.exists("client.key"):
-        print "Generating private key"
+        logger.debug("Generating sync private key")
         private_key = crypto.PKey()
         private_key.generate_key(crypto.TYPE_RSA, 3096)
 
-        print "Generating cert"
+        logger.debug("Generating sync public key")
         cert = crypto.X509()
         subj = cert.get_subject()
         subj.C = "US"

@@ -1,6 +1,11 @@
+import logging
+
 from gi.repository import Gio
 
 from pysyncthing.connection import ConnectionBase
+
+
+logger = logging.getLogger(__name__)
 
 
 class SyncServer(object):
@@ -38,11 +43,11 @@ class IncomingConnection(ConnectionBase):
         self.conn.handshake_async(0, None, self._handshake_complete)
 
     def _accept_certificate(self, conn, peer_cert, errors):
-        print "Acceptiong cert..."
+        logger.debug("Accepting certificate")
         return True
 
     def _handshake_complete(self, conn, task):
-        print "Handshake complete"
+        logger.debug("Handshake complete")
 
         self.inp = self.conn.get_input_stream()
         self.outp = self.conn.get_output_stream()
