@@ -55,8 +55,11 @@ class DiscoverLocal(object):
     def start(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.bind(('', 21025))
-
+        try:
+            self.sock.bind(('', 21025))
+        except socket.error:
+            print "Local discovery not available"
+            return
         self._channel = GLib.IOChannel.unix_new(self.sock.fileno())
         self._channel.add_watch(GLib.IO_IN, self._handle)
 
