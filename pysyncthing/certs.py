@@ -1,9 +1,31 @@
+# -*- Mode: Python; py-indent-offset: 4 -*-
+# pysyncthing - GNOME implementation of the syncthing engine
+# Copyright (C) 2014 John Carr
+#
+#   pysyncthing/certs.py: Utility functions for working with certificates and fingerprints.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import hashlib
 import base64
 from binascii import a2b_base64
 from OpenSSL import crypto
+
+
+logger = logging.getLogger(__name__)
 
 LUHN_ALPHABET = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
 
@@ -40,11 +62,11 @@ def get_fingerprint_from_device_id(device_id):
 
 def ensure_certs():
     if not os.path.exists("client.key"):
-        print "Generating private key"
+        logger.debug("Generating sync private key")
         private_key = crypto.PKey()
         private_key.generate_key(crypto.TYPE_RSA, 3096)
 
-        print "Generating cert"
+        logger.debug("Generating sync public key")
         cert = crypto.X509()
         subj = cert.get_subject()
         subj.C = "US"

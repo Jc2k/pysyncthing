@@ -1,5 +1,29 @@
+# -*- Mode: Python; py-indent-offset: 4 -*-
+# pysyncthing - GNOME implementation of the syncthing engine
+# Copyright (C) 2014 John Carr
+#
+#   pysyncthing/connection.py: Connection related code that is shared between clients and servers.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, see <http://www.gnu.org/licenses/>.
+
+import logging
+
 from construct import Container
 from .protocol import packet, packet_stream
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionBase(object):
@@ -19,7 +43,7 @@ class ConnectionBase(object):
             ),
             payload=Container(**kwargs),
         ))
-        print "SEND", packet.parse(data)
+        logger.debug("SEND: %s", packet.parse(data))
         self.outp.write(data)
         self.local_message_id += 1
 
@@ -59,7 +83,7 @@ class ConnectionBase(object):
         )
 
     def handle_packet(self, packet):
-        print "RECV", packet
+        logger.debug("RECV: %s", packet)
         cb = getattr(self, "handle_%s" % packet.header.message_type, None)
         if not cb:
             return

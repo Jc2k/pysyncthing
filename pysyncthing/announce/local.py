@@ -1,9 +1,32 @@
+# -*- Mode: Python; py-indent-offset: 4 -*-
+# pysyncthing - GNOME implementation of the syncthing engine
+# Copyright (C) 2014 John Carr
+#
+#   pysyncthing/announce/local.py: Local discovery of other syncthing devices
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, see <http://www.gnu.org/licenses/>.
+
 import socket
+import logging
 
 from gi.repository import GLib, Gio
 from construct import Container
 
 from ..protocol import Announcement
+
+
+logger = logging.getLogger(__name__)
 
 
 class AnnounceLocal(object):
@@ -58,8 +81,11 @@ class DiscoverLocal(object):
     def start(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.bind(('', 21025))
-
+        try:
+            self.sock.bind(('', 21025))
+        except socket.error:
+            logger.warning("Local discovery not available")
+            return
         self._channel = GLib.IOChannel.unix_new(self.sock.fileno())
         self._channel.add_watch(GLib.IO_IN, self._handle)
 
@@ -72,4 +98,5 @@ class DiscoverLocal(object):
             return False
         packet = Announcement.parse(data)
         self.devices[packet.id] = packet
+        logger.debug("%s %s", packet, address)
         return True

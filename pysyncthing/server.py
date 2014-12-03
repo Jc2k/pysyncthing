@@ -1,6 +1,30 @@
+# -*- Mode: Python; py-indent-offset: 4 -*-
+# pysyncthing - GNOME implementation of the syncthing engine
+# Copyright (C) 2014 John Carr
+#
+#   pysyncthing/server.py: Incoming network connections.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, see <http://www.gnu.org/licenses/>.
+
+import logging
+
 from gi.repository import Gio
 
 from pysyncthing.connection import ConnectionBase
+
+
+logger = logging.getLogger(__name__)
 
 
 class SyncServer(object):
@@ -38,11 +62,11 @@ class IncomingConnection(ConnectionBase):
         self.conn.handshake_async(0, None, self._handshake_complete)
 
     def _accept_certificate(self, conn, peer_cert, errors):
-        print "Acceptiong cert..."
+        logger.debug("Accepting certificate")
         return True
 
     def _handshake_complete(self, conn, task):
-        print "Handshake complete"
+        logger.debug("Handshake complete")
 
         self.inp = self.conn.get_input_stream()
         self.outp = self.conn.get_output_stream()
