@@ -68,6 +68,12 @@ class Engine(object):
             return
         self.devices[device_id].found(addresses)
 
+    def incoming_connection(self, device_id, connection):
+        if not device_id in self.devices:
+            logger.debug("Unexpected connection from %s", device_id)
+            return False
+        return self.devices[device_id].incoming_connection(connection)
+
     def run(self):
         logger.info("Starting pysyncthing")
         logger.info("pysyncthing 0.0.0")

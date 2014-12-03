@@ -23,6 +23,8 @@ from gi.repository import Gio
 
 from pysyncthing.connection import ConnectionBase
 
+from .certs import get_device_id
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,11 @@ class ServerConnection(ConnectionBase):
 
     def _accept_certificate(self, conn, peer_cert, errors):
         logger.debug("Accepting certificate")
-        return True
+        pem = peer_cert.get_property("certificate-pem")
+        device_id = get_device_id(pem)
+        retval = self.engine.incoming_connection(device_id, self)
+        # self.pending_connections.remove(self)
+        return retval
 
     def _handshake_complete(self, conn, task):
         logger.debug("Handshake complete")

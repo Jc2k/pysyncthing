@@ -41,6 +41,13 @@ class Pair(object):
             self.addresses = addresses
             self.connect()
 
+    def incoming_connection(self, connection):
+        if self.status != "not-connected":
+            return False
+        self.connection = connection
+        self.status = "connected"
+        return True
+
     def connect(self):
         logger.debug("Started trying to connect")
         ip, port = self.addresses[0]
