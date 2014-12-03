@@ -37,7 +37,7 @@ class SyncServer(object):
         self.service = Gio.SocketService.new()
 
         # Listen on localhost..
-        address = Gio.InetSocketAddress.new(Gio.InetAddress.new_from_string("127.0.0.1"), 2200)
+        address = Gio.InetSocketAddress.new(Gio.InetAddress.new_from_string("0.0.0.0"), 2200)
         self.service.add_address(address, Gio.SocketType.STREAM, Gio.SocketProtocol.TCP, self.service)
 
         # Setup dispatcher to deal with incoming connections
@@ -48,16 +48,17 @@ class SyncServer(object):
 
     def _incoming(self, socket_service, connection, source_object):
         # self.active_connections.append(connection)
-        conn = IncomingConnection(self.engine, connection)
+        logger.debug("Incoming connection")
+        conn = ServerConnection(self.engine, connection)
         self.pending_connections.append(conn)
 
 
-class IncomingConnection(ConnectionBase):
+class ServerConnection(ConnectionBase):
 
     def __init__(self, engine, connection):
-        super(IncomingConnection, self).__init__(engine)
+        super(ServerConnection, self).__init__(engine)
         self.conn = Gio.TlsServerConnection.new(connection, engine.certificate)
-        # self.conn.set_property("authentication-mode", Gio.TlsAuthenticationMode.REQUIRED)
+        self.conn.set_property("authentication-mode", Gio.TlsAuthenticationMode.REQUIRED)
         self.conn.connect("accept-certificate", self._accept_certificate)
         self.conn.handshake_async(0, None, self._handshake_complete)
 
