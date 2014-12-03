@@ -46,10 +46,8 @@ def _split(data, step):
     return [data[x:x+step] for x in range(0, len(data), step)]
 
 
-def get_device_id(pem):
-    fingerprint = get_fingerprint(pem)
+def get_device_id_from_fingerprint(fingerprint):
     b32 = base64.b32encode(fingerprint).rstrip("=")
-
     chunks = [x + generate_check_character(x) for x in _split(b32, 13)]
     return "-".join(_split("".join(chunks), 7))
 
@@ -58,6 +56,10 @@ def get_fingerprint_from_device_id(device_id):
     device_id = device_id.replace("-", "")
     b32 = "".join(x[:13] for x in  _split(device_id, 14)) + "===="
     return base64.b32decode(b32)
+
+
+def get_device_id(pem):
+    return get_device_id_from_fingerprint(get_fingerprint(pem))
 
 
 def ensure_certs():

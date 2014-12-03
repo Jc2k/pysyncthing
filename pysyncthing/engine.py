@@ -23,6 +23,7 @@ from gi.repository import Gio, GLib
 from .certs import ensure_certs, get_device_id, get_fingerprint, get_fingerprint_from_device_id
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
+from .pair import Pair
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,6 @@ class Engine(object):
     def __init__(self, name):
         self.name = name
         self.folders = []
-        self.devices = {}
 
         # FIXME: Generate and store certs in GNOME-keyring
         ensure_certs()
@@ -54,20 +54,19 @@ class Engine(object):
             DiscoverLocal(self),
         ]
 
-        print self.get_device("YNOKRE2-UTJMUDT-BQXMFFC-R5OTPZY-H2LGIMO-XUME4RW-KSA3ZCF-2PVPBQI")
+        self.devices = {}
+        self.add_pair("YNOKRE2-UTJMUDT-BQXMFFC-R5OTPZY-H2LGIMO-XUME4RW-KSA3ZCF-2PVPBQI")
 
-    def get_device(self, device_id):
-        if device_id in self.devices:
-            return self.devices[device_id]
+    def add_pair(self, device_id):
+        self.devices[device_id] = Pair(self, device_id)
 
-        fingerprint = get_fingerprint_from_device_id(device_id)
-        for agent in self.discovery:
-            device = agent.lookup(fingerprint)
-            if device:
-                self.devices[device_id] = device
-                return device
-
-        return None
+    def found_device(self, device_id, addresses):
+        if device_id == self.device_id:
+            return
+        logger.debug("Found addresses %s for device %s", addresses, device_id)
+        if device_id not in self.devices:
+            return
+        self.devices[device_id].found(addresses)
 
     def run(self):
         logger.info("Starting pysyncthing")
@@ -75,5 +74,7 @@ class Engine(object):
         logger.info("My ID: %s", self.device_id)
 
         self.server.start()
+        [p.start() for p in self.devices.values()]
         [d.start() for d in self.discovery]
+
         GLib.MainLoop().run()

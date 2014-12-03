@@ -24,6 +24,7 @@ from gi.repository import GLib, Gio
 from construct import Container
 
 from ..protocol import Announcement
+from ..certs import get_device_id_from_fingerprint
 
 
 logger = logging.getLogger(__name__)
@@ -48,9 +49,6 @@ class AnnounceLocal(object):
 
         self._broadcast()
         self._loop_id = GLib.timeout_add_seconds(30, self._broadcast, None)
-
-    def lookup(self, device_id):
-        return None
 
     def _broadcast(self, *args):
         data = Announcement.build(Container(
@@ -89,14 +87,22 @@ class DiscoverLocal(object):
         self._channel = GLib.IOChannel.unix_new(self.sock.fileno())
         self._channel.add_watch(GLib.IO_IN, self._handle)
 
-    def lookup(self, device_id):
-        return self.devices.get(device_id, None)
+    def _handle_device(self, payload, socket_address):
+        device_id = get_device_id_from_fingerprint(payload.id)
+        addresses = []
+        for address in payload.addresses:
+            if address.ip == "":
+                addresses.append((socket_address[0], address.port))
+            else:
+                addresses.append((address.ip, address.port))
+        self.engine.found_device(device_id, addresses)
 
     def _handle(self, io, flags):
         data, address = self.sock.recvfrom(1024)
         if not len(data):
             return False
         packet = Announcement.parse(data)
-        self.devices[packet.id] = packet
         logger.debug("%s %s", packet, address)
+        self._handle_device(packet.device, address)
+        [self._handle_device(d, address) for d in packet.devices]
         return True

@@ -26,14 +26,12 @@ from .connection import ConnectionBase
 class ClientConnection(ConnectionBase):
 
     def __init__(self, engine, hostname, port):
-        super(ClientConnection, self).__init__()
-
-        self.engine = engine
+        super(ClientConnection, self).__init__(engine)
 
         client = Gio.SocketClient()
         connection = client.connect_to_host(hostname, port, None)
 
-        self.conn = Gio.TlsClientConnection(connection, None)
+        self.conn = Gio.TlsClientConnection.new(connection, None)
         self.conn.set_certificate(self.engine.certificate)
 
         self.inp = self.conn.get_input_stream()
