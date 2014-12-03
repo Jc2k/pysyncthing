@@ -54,7 +54,7 @@ def get_device_id_from_fingerprint(fingerprint):
 
 def get_fingerprint_from_device_id(device_id):
     device_id = device_id.replace("-", "")
-    b32 = "".join(x[:13] for x in  _split(device_id, 14)) + "===="
+    b32 = "".join(x[:13] for x in _split(device_id, 14)) + "===="
     return base64.b32decode(b32)
 
 

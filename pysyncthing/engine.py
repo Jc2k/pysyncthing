@@ -20,7 +20,7 @@
 import logging
 
 from gi.repository import Gio, GLib
-from .certs import ensure_certs, get_device_id, get_fingerprint, get_fingerprint_from_device_id
+from .certs import ensure_certs, get_device_id, get_fingerprint
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
 from .pair import Pair
@@ -69,7 +69,7 @@ class Engine(object):
         self.devices[device_id].found(addresses)
 
     def incoming_connection(self, device_id, connection):
-        if not device_id in self.devices:
+        if device_id not in self.devices:
             logger.debug("Unexpected connection from %s", device_id)
             return False
         return self.devices[device_id].incoming_connection(connection)
