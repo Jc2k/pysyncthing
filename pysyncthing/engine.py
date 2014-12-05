@@ -36,9 +36,7 @@ class Engine(object):
     CLIENT_NAME = "pysyncthing"
     CLIENT_VERSION = "v0.0.0"
 
-    def __init__(self, name):
-        self.name = name
-
+    def __init__(self):
         conf = {}
         conf_dir = os.path.join(GLib.get_user_config_dir(), "pysyncthing")
         conf_path = os.path.join(conf_dir, "conf.json")
@@ -47,6 +45,9 @@ class Engine(object):
         if os.path.exists(conf_path):
             with open(conf_path) as fp:
                 conf = json.load(fp)
+
+        self.name = conf.get("name", GLib.get_host_name())
+        logger.debug("Local device is called %s", self.name)
 
         self.folders = []
 

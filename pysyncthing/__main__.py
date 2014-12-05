@@ -28,4 +28,4 @@ import logging
 from .engine import Engine
 
 logging.basicConfig(level=logging.DEBUG)
-Engine("example").run()
+Engine().run()
