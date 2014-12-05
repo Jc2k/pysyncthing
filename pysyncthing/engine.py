@@ -26,6 +26,7 @@ from .certs import ensure_certs, get_device_id, get_fingerprint
 from .server import SyncServer
 from .announce.local import AnnounceLocal, DiscoverLocal
 from .pair import Pair
+from .folder import Folder
 
 
 logger = logging.getLogger(__name__)
@@ -49,8 +50,6 @@ class Engine(object):
         self.name = conf.get("name", GLib.get_host_name())
         logger.debug("Local device is called %s", self.name)
 
-        self.folders = []
-
         # FIXME: Generate and store certs in GNOME-keyring
         ensure_certs()
         self.certificate = Gio.TlsCertificate.new_from_files("client.crt", "client.key")
@@ -70,6 +69,14 @@ class Engine(object):
         self.devices = {}
         for device in conf.get("devices", []):
             self.add_pair(device["id"])
+
+        self.folders = []
+        for folder in conf.get("folders", []):
+            self.folders.append(Folder(
+                folder["name"],
+                folder["path"],
+                [self.devices[device] for device in folder["devices"] if device in folder["devices"]],
+            ))
 
     def add_pair(self, device_id):
         self.devices[device_id] = Pair(self, device_id)
@@ -95,6 +102,7 @@ class Engine(object):
 
         self.server.start()
         [p.start() for p in self.devices.values()]
+        [f.start() for f in self.folders]
         [d.start() for d in self.discovery]
 
         GLib.MainLoop().run()
