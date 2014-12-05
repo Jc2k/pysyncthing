@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
+import os
+import json
 import logging
 
 from gi.repository import Gio, GLib
@@ -36,6 +38,16 @@ class Engine(object):
 
     def __init__(self, name):
         self.name = name
+
+        conf = {}
+        conf_dir = os.path.join(GLib.get_user_config_dir(), "pysyncthing")
+        conf_path = os.path.join(conf_dir, "conf.json")
+
+        logger.debug("Looking for config in %s", conf_path)
+        if os.path.exists(conf_path):
+            with open(conf_path) as fp:
+                conf = json.load(fp)
+
         self.folders = []
 
         # FIXME: Generate and store certs in GNOME-keyring
@@ -55,7 +67,8 @@ class Engine(object):
         ]
 
         self.devices = {}
-        self.add_pair("YNOKRE2-UTJMUDT-BQXMFFC-R5OTPZY-H2LGIMO-XUME4RW-KSA3ZCF-2PVPBQI")
+        for device in conf.get("devices", []):
+             self.add_pair(device["id"])
 
     def add_pair(self, device_id):
         self.devices[device_id] = Pair(self, device_id)
