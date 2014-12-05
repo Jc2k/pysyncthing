@@ -66,4 +66,4 @@ class ClientConnection(ConnectionBase):
                 offset += block.size
 
     def handle_4(self, payload):
-        self.send_message(5, id=packet['header'].message_id)
+        self.send_message(5, id=payload.header.message_id)
