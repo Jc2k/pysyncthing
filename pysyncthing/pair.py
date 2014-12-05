@@ -51,6 +51,7 @@ class Pair(object):
     def connect(self):
         logger.debug("Started trying to connect")
         ip, port = self.addresses[0]
+        self.status = "connecting"
         self.connection = ClientConnection(self.engine, ip, port)
 
     def start(self):
