@@ -68,7 +68,7 @@ class Engine(object):
 
         self.devices = {}
         for device in conf.get("devices", []):
-             self.add_pair(device["id"])
+            self.add_pair(device["id"])
 
     def add_pair(self, device_id):
         self.devices[device_id] = Pair(self, device_id)
