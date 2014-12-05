@@ -33,10 +33,14 @@ class ClientConnection(ConnectionBase):
 
         self.conn = Gio.TlsClientConnection.new(connection, None)
         self.conn.set_certificate(self.engine.certificate)
+        self.conn.connect("accept-certificate", self._accept_certificate)
 
         self.inp = self.conn.get_input_stream()
         self.outp = self.conn.get_output_stream()
         self._read_packet()
+
+    def _accept_certificate(self, connection, cert, flags):
+        return True
 
     def handle_0(self, payload):
         self.send_hello([], {"name": self.engine.name})
@@ -48,18 +52,18 @@ class ClientConnection(ConnectionBase):
             files=[],
         )
 
-        for file in packet.payload.files:
+        for file in payload.payload.files:
             offset = 0
             for block in file.blocks:
                 self.send_message(
                     2,
-                    folder=packet.payload.folder,
+                    folder=payload.payload.folder,
                     name=file.name,
                     offset=offset,
                     size=block.size,
                 )
                 # FIXME: Verify hash
-                offset += 0
+                offset += block.size
 
     def handle_4(self, payload):
         self.send_message(5, id=packet['header'].message_id)
