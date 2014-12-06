@@ -45,7 +45,7 @@ class Pair(object):
         if self.status != "not-connected":
             return False
         self.connection = connection
-        self.status = "connected"
+        self.status = "connecting"
         return True
 
     def connect(self):
