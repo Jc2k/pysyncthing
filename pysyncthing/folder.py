@@ -30,5 +30,13 @@ class Folder(object):
         self.path = path
         self.peers = peers
 
+    def send_index(self, device):
+        files = []
+        device.send_message(
+            1,
+            folder=self.name,
+            files=files,
+        )
+
     def start(self):
         logger.debug("Watching folder %s at %s", self.name, self.path)
