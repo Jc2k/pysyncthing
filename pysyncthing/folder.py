@@ -38,5 +38,45 @@ class Folder(object):
             files=files,
         )
 
+    def send_index_update(self, device):
+        files = []
+        device.send_message(
+            6,
+            folder=self.name,
+            files=[],
+        )
+
+    def requested_file_block(self, device, file, offset, size):
+        """ A remote device asked for a file chunk """
+        with open(os.path.join(self.path, file)) as fp:
+            fp.seek(offset)
+            data = offset.read(size)
+
+        device.send_message(
+            4,
+            data=data,
+        )
+
+    def receive_file_block(self, device, request, reply):
+        """ We have received a chunk of a remote file """
+        if request.size != len(reply.data):
+            logger.warning("Asked %r for %s bytes from %r but got %s", device, request.size, request.file, len(reply.data))
+            return
+
+        with open(os.path.join(self.path, request.file), "w") as fp:
+            fp.seek(request.offset)
+            fp.write(reply.data)
+
+    def request_file_block(self, device, file, offset, size):
+        """ Ask for a chunk of a remote file """
+        result = self.device.send_message(
+            3,
+            folder=self.name,
+            name=file,
+            offset=offset,
+            size=size,
+        )
+        result.callback = self.receive_file_block
+
     def start(self):
         logger.debug("Watching folder %s at %s", self.name, self.path)

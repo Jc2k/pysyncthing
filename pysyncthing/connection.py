@@ -83,7 +83,8 @@ class ConnectionBase(object):
         )
 
     def handle_packet(self, packet):
-        logger.debug("RECV: %s", packet)
+        logger.debug("RECV: %s", packet.header.message_type)
+        # logger.debug("RECV: %s", packet)
         cb = getattr(self, "handle_%s" % packet.header.message_type, None)
         if not cb:
             return

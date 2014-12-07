@@ -51,7 +51,7 @@ class ClientConnection(ConnectionBase):
             folder="default",
             files=[],
         )
-
+        return
         for file in payload.payload.files:
             offset = 0
             for block in file.blocks:
