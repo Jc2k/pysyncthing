@@ -63,7 +63,7 @@ class Folder(object):
             logger.warning("Asked %r for %s bytes from %r but got %s", device, request.size, request.file, len(reply.data))
             return
 
-        with open(os.path.join(self.path, request.file), "w") as fp:
+        with open(os.path.join(self.path, request.file), "w+") as fp:
             fp.seek(request.offset)
             fp.write(reply.data)
 
