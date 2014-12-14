@@ -30,6 +30,9 @@ class Folder(object):
         self.path = path
         self.devices = devices
 
+    def process_remote_index(self, index):
+        pass
+
     def send_index(self, device):
         files = []
         device.send_message(
