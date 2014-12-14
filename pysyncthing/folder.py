@@ -54,11 +54,7 @@ class Folder(object):
         with open(os.path.join(self.path, file)) as fp:
             fp.seek(offset)
             data = offset.read(size)
-
-        device.send_message(
-            4,
-            data=data,
-        )
+        return data
 
     def receive_file_block(self, device, request, reply):
         """ We have received a chunk of a remote file """
