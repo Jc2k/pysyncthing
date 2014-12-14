@@ -47,38 +47,32 @@ class ConnectionBase(object):
         self.outp.write(data)
         self.local_message_id += 1
 
-    def send_hello(self, folders, options):
+    def send_hello(self, folders, **options):
+        fs = []
+        for folder in folders:
+            ds = []
+            for device in folder.devices:
+                ds.append(Container(
+                    id=device.fingerprint,
+                    flags=Container(
+                        priority=0,
+                        introducer=False,
+                        read_only=False,
+                        trusted=True,
+                    )
+                    max_local_version=0,
+                ))
+
+            fs.append(Container(
+                name=folder.name,
+                devices=ds,
+            ))
+
         self.send_message(
             0,
             client_name=self.engine.CLIENT_NAME,
             client_version=self.engine.CLIENT_VERSION,
-            folders=[
-                Container(
-                    id='default',
-                    devices=[
-                        Container(
-                            id='\x05\x13\x1d8\x8a\xc3\xd5\xe1\xd5\xcd\xe1\xb7\xa7j\xff\xbfq\xaf/\x1fX\xf4\x86J\\\xd2\xc6p\x91\xed\x85\xa2',
-                            flags=Container(
-                                priority=0,
-                                introducer=False,
-                                read_only=False,
-                                trusted=True,
-                            ),
-                            max_local_version=0,
-                        ),
-                        Container(
-                            id='\xcd\xb4\xc3MP\xa9%\xa8\x08Y\x10C)O\xe91q\x9d\xf1,\xb8\x94\x81\xc5\xb0\xecim+o\xd6\xb9',
-                            flags=Container(
-                                priority=0,
-                                introducer=False,
-                                read_only=False,
-                                trusted=True,
-                            ),
-                            max_local_version=0,
-                        )
-                    ]
-                )
-            ],
+            folders=fs,
             options=options or {},
         )
 

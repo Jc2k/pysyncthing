@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 class Folder(object):
 
-    def __init__(self, name, path, peers):
+    def __init__(self, name, path, devices):
         self.name = name
         self.path = path
-        self.peers = peers
+        self.devices = devices
 
     def send_index(self, device):
         files = []
