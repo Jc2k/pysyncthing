@@ -78,7 +78,7 @@ class ServerConnection(ConnectionBase):
         self.inp = self.conn.get_input_stream()
         self.outp = self.conn.get_output_stream()
 
-        self.send_hello(folders=[], options={"name": self.engine.name})
+        self.send_hello())
         self._read_packet()
 
     def handle_1(self, payload):

@@ -43,7 +43,7 @@ class ClientConnection(ConnectionBase):
         return True
 
     def handle_0(self, payload):
-        self.send_hello([], {"name": self.engine.name})
+        self.send_hello()
 
     def handle_1(self, payload):
         self.send_message(

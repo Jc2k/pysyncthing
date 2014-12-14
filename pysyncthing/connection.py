@@ -47,9 +47,9 @@ class ConnectionBase(object):
         self.outp.write(data)
         self.local_message_id += 1
 
-    def send_hello(self, folders, **options):
+    def send_hello(self, **kwargs):
         fs = []
-        for folder in folders:
+        for folder in self.engine.folders:
             ds = []
             for device in folder.devices:
                 ds.append(Container(
@@ -68,12 +68,15 @@ class ConnectionBase(object):
                 devices=ds,
             ))
 
+        options = {"name": self.engine.name}
+        options.update(kwargs)
+
         self.send_message(
             0,
             client_name=self.engine.CLIENT_NAME,
             client_version=self.engine.CLIENT_VERSION,
             folders=fs,
-            options=options or {},
+            options=options,
         )
 
     def handle_packet(self, packet):
