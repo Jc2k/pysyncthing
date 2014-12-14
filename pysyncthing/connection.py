@@ -28,9 +28,10 @@ logger = logging.getLogger(__name__)
 
 class ConnectionBase(object):
 
-    def __init__(self, engine):
+    def __init__(self, pair):
         self.local_message_id = 0
-        self.engine = engine
+        self.pair = pair
+        self.engine = pair.engine
         self._read_buffer = ""
 
     def send_message(self, type, id=None, **kwargs):
@@ -78,6 +79,48 @@ class ConnectionBase(object):
             folders=fs,
             options=options,
         )
+
+    def close(self):
+        self.conn.close()
+        self.pair.status = "not-connected"
+        self.pair.connection = None
+
+    def handle_1(self, packet):
+        """ Remote sent us folder structure """
+
+    def handle_2(self, packet):
+        """ Remote asked for some data """
+        try:
+            folder = self.engine.folders[packet.payload.folder]
+        except KeyError:
+            logger.error("Remote asked folder folder %r, but we don't have that folder", packet.payload.folder)
+            # FIXME: How do we stop normal occurences of this? Terminate all active connections on folder addition/removal?
+            return
+
+        data = folder.requested_file_block(
+            self,
+            packet.payload.name,
+            packet.payload.offset,
+            packet.payload.size,
+        )
+
+        self.send_message(
+            3,
+            data=data,
+            id=payload.header.message_id,
+        )
+
+    def handle_3(self, packet):
+        """ Remote answered a request for data """
+
+    def handle_4(self, packet):
+        """ Remote pinged us """
+        self.send_message(5, id=payload.header.message_id)
+
+    def handle_7(self, packet):
+        """ Remote is closing connection with us """
+        logger.debug("Remote is closing connection: %s", packet.payload.close_message)
+        self.close()
 
     def handle_packet(self, packet):
         logger.debug("RECV: %s", packet.header.message_type)

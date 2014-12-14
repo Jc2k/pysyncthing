@@ -64,6 +64,3 @@ class ClientConnection(ConnectionBase):
                 )
                 # FIXME: Verify hash
                 offset += block.size
-
-    def handle_4(self, payload):
-        self.send_message(5, id=payload.header.message_id)
