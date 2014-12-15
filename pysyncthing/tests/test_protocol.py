@@ -23,11 +23,11 @@ class TestClusterConfigMessage(unittest.TestCase):
                 compressed=False,
             ),
             payload=Container(
-                client_name='syncthing',
-                client_version='v0.10.5',
+                client_name=b'syncthing',
+                client_version=b'v0.10.5',
                 folders=[],
                 options={
-                    "name": b"example",
+                    b"name": b"example",
                 }
             ),
         )))
