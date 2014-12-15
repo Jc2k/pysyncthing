@@ -19,7 +19,6 @@
 
 from gi.repository import Gio
 # from construct import Container
-from .protocol import packet
 from .connection import ConnectionBase
 
 

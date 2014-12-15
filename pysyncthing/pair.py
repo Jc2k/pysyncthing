@@ -52,7 +52,7 @@ class Pair(object):
         logger.debug("Started trying to connect")
         ip, port = self.addresses[0]
         self.status = "connecting"
-        self.connection = ClientConnection(self.engine, ip, port)
+        self.connection = ClientConnection(self, ip, port)
 
     def start(self):
         logger.debug("Starting up pair management for %s", self.device_id)

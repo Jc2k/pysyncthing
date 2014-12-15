@@ -62,7 +62,7 @@ class Engine(object):
         self.server = SyncServer(self)
 
         self.discovery = [
-            #AnnounceLocal(self),
+            AnnounceLocal(self),
             DiscoverLocal(self),
         ]
 

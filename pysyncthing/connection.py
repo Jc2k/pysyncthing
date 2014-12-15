@@ -60,12 +60,12 @@ class ConnectionBase(object):
                         introducer=False,
                         read_only=False,
                         trusted=True,
-                    )
+                    ),
                     max_local_version=0,
                 ))
 
             fs.append(Container(
-                name=folder.name,
+                id=folder.name,
                 devices=ds,
             ))
 
@@ -107,7 +107,7 @@ class ConnectionBase(object):
         self.send_message(
             3,
             data=data,
-            id=payload.header.message_id,
+            id=packet.header.message_id,
         )
 
     def handle_3(self, packet):
@@ -115,7 +115,7 @@ class ConnectionBase(object):
 
     def handle_4(self, packet):
         """ Remote pinged us """
-        self.send_message(5, id=payload.header.message_id)
+        self.send_message(5, id=packet.header.message_id)
 
     def handle_7(self, packet):
         """ Remote is closing connection with us """

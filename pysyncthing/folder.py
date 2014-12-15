@@ -18,6 +18,9 @@
 # License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
+
+from .folder_monitor import FileMonitor
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +32,7 @@ class Folder(object):
         self.name = name
         self.path = path
         self.devices = devices
+        self.monitor = FileMonitor(path)
 
     def process_remote_index(self, index):
         pass
@@ -46,7 +50,7 @@ class Folder(object):
         device.send_message(
             6,
             folder=self.name,
-            files=[],
+            files=files,
         )
 
     def requested_file_block(self, device, file, offset, size):
@@ -79,3 +83,7 @@ class Folder(object):
 
     def start(self):
         logger.debug("Watching folder %s at %s", self.name, self.path)
+        if not os.path.exists(self.path):
+            logger.debug("Directory %r does not exist - creating", self.path)
+            os.makedirs(self.path)
+        self.monitor.start()

@@ -17,41 +17,59 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
-import os
-from gi.repository import Gio, GLib
+import logging
+
+from gi.repository import Gio
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileMonitor(object):
 
     def __init__(self, path):
         self.monitors = {}
-        self._listen_to_directory(Gio.File.new_for_path(path))
+        self._handlers = {}
+        self.path = path
+
+    def start(self):
+        self._listen_to_directory(Gio.File.new_for_path(self.path))
 
     def _listen_to_directory(self, file):
-        print "Subscribe to directory %r" % file.get_path()
-        for child_info in file.enumerate_children("", 0, None):
+        path = file.get_path()
+        logger.debug("Subscribing to directory %r", path)
+        for child_info in file.enumerate_children("standard::*", Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, None):
             if child_info.get_file_type() != Gio.FileType.DIRECTORY:
                 continue
             child = file.get_child(child_info.get_name())
             self._listen_to_directory(child)
 
-        m = self.monitors[file.get_path()] = file.monitor_directory(Gio.FileMonitorFlags.NONE, None)
-        m.connect("changed", self._changed)
+        m = self.monitors[path] = file.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+        self._handlers[path] = m.connect("changed", self._changed)
 
     def _changed(self, m, f, o, event):
+        path = f.get_path()
+
         if event == Gio.FileMonitorEvent.CREATED:
             info = f.query_info("standard::", 0, None)
-            if info.get_file_type() == Gio.FileType.DIRECTORY:
+
+            file_type = info.get_file_type()
+            if file_type == Gio.FileType.DIRECTORY:
                 self._listen_to_directory(f)
+            elif file_type in (Gio.FileType.REGULAR, ):
+                logger.debug("File %r created", path)
+
         elif event == Gio.FileMonitorEvent.DELETED:
-            if f.get_path() in self.monitors:
-                print "Unsubscribing from directory %r" % f.get_path()
-                del self.monitors[f.get_path()]
+            if path in self.monitors:
+                logger.debug("Unsubscribing from directory %r", path)
+                self.monitors[path].disconnect(self._handlers[path])
+                del self._handlers[path]
+                del self.monitors[path]
+
+            if True:
+                # FIXME: If a file was deleted we can't really tell what it was...
+                # if info.get_file_type() in (Gio.FileType.REGULAR, ):
+                logger.debug("File %r deleted", path)
+
         else:
-            print m, f, o, event, info
-
-
-if __name__ == "__main__":
-    m = FileMonitor(os.path.join(os.environ['HOME'], "Projects", "test"))
-    print "Finished subscribing"
-    GLib.MainLoop().run()
+            logger.debug("%r", (m, f, o, event, info))
