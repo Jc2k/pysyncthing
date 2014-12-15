@@ -7,6 +7,11 @@ python:
   - "pypy3"
 
 
+matrix:
+  allow_failures:
+    - python: "pypy3"
+
+
 script:
   - coverage run $(which py.test)
   - flake8 pysyncthing
