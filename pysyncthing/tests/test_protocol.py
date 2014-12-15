@@ -6,13 +6,13 @@ from pysyncthing.protocol import packet
 
 class TestClusterConfigMessage(unittest.TestCase):
 
-    EXAMPLE1 = "\x00\x01\x00\x00\x00\x00\x008\x00\x00\x00\tsyncthing\x00\x00\x00\x00\x00\x00\x07v0.10.5\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x04name\x00\x00\x00\x07example\x00"
+    EXAMPLE1 = b"\x00\x01\x00\x00\x00\x00\x008\x00\x00\x00\tsyncthing\x00\x00\x00\x00\x00\x00\x07v0.10.5\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x04name\x00\x00\x00\x07example\x00"
 
     def test_parse_example1(self):
         p = packet.parse(self.EXAMPLE1)
         self.assertEqual(p.header.message_type, 0)
-        self.assertEqual(p.payload.client_name, "syncthing")
-        self.assertEqual(p.payload.client_version, "v0.10.5")
+        self.assertEqual(p.payload.client_name, b"syncthing")
+        self.assertEqual(p.payload.client_version, b"v0.10.5")
 
     def test_build_example1(self):
         self.assertEqual(self.EXAMPLE1, packet.build(Container(
@@ -27,7 +27,7 @@ class TestClusterConfigMessage(unittest.TestCase):
                 client_version='v0.10.5',
                 folders=[],
                 options={
-                    "name": "example",
+                    "name": b"example",
                 }
             ),
         )))
