@@ -1,6 +1,7 @@
 lz4
 construct
 pyopenssl
+pgi
 
 flake8
 pytest
