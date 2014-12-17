@@ -2,7 +2,8 @@
 pysyncthing
 ===========
 
-pysyncthing is a pure python implementation of the syncthing protocol.
+pysyncthing is a pure python implementation of the syncthing protocol. It uses
+GLib and GNOME API's where possible as it aims for good GNOME integration.
 
 It's primary goal is to ensure that third-party implementation implementations
 of syncthing are possible, and to help non-go programmers figure out how it
