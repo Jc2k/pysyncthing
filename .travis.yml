@@ -8,10 +8,17 @@ python:
 
 sudo: false
 
+cache:
+  directories:
+    - $HOME/wheelhouse
+
 matrix:
   allow_failures:
     - python: "pypy3"
 
+install:
+  - pip wheel -r requirements.txt --wheel-dir=$HOME/wheelhouse
+  - pip install --no-index --find-links=$HOME/wheelhouse -r requirements.txt
 
 script:
   - coverage run $(which py.test)
