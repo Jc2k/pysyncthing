@@ -17,7 +17,7 @@ matrix:
     - python: "pypy3"
 
 install:
-  - pip wheel -r requirements.txt --wheel-dir=$HOME/wheelhouse
+  - pip wheel --find-links=$HOME/wheelhouse -r requirements.txt --wheel-dir=$HOME/wheelhouse
   - pip install --no-index --find-links=$HOME/wheelhouse -r requirements.txt
 
 script:
